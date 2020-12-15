@@ -11,10 +11,11 @@ use qovery_engine::transaction::TransactionResult;
 use test_utilities::utilities::context;
 use test_utilities::utilities::{init, is_pod_restarted_aws_env};
 use tracing::{span, Level};
-// to check overload between several databases and apps
+
+// Env: DEV  => to check overload between several databases and apps
 #[test]
 #[ignore]
-fn deploy_an_environment_with_3_databases_and_3_apps() {
+fn deploy_a_development__environment_with_3_databases_and_3_apps() {
     init();
 
     let span = span!(
@@ -26,6 +27,48 @@ fn deploy_an_environment_with_3_databases_and_3_apps() {
     let context = context();
     let context_for_deletion = context.clone_not_same_execution_id();
     let environment = test_utilities::aws::environment_3_apps_3_routers_3_databases(&context);
+
+    let mut environment_delete = environment.clone();
+    environment_delete.action = Action::Delete;
+    let ea = EnvironmentAction::Environment(environment);
+    let ea_delete = EnvironmentAction::Environment(environment_delete);
+
+    match deploy_environment(&context, &ea) {
+        TransactionResult::Ok => assert!(true),
+        TransactionResult::Rollback(_) => assert!(false),
+        TransactionResult::UnrecoverableError(_, _) => assert!(false),
+    };
+
+    // TODO: should be uncommented as soon as cert-manager is fixed
+    // for the moment this assert report a SSL issue on the second router, so it's works well
+    /*    let connections = test_utilities::utilities::check_all_connections(&env_to_check);
+    for con in connections {
+        assert_eq!(con, true);
+    }*/
+
+    match delete_environment(&context_for_deletion, &ea_delete) {
+        TransactionResult::Ok => assert!(true),
+        TransactionResult::Rollback(_) => assert!(false),
+        TransactionResult::UnrecoverableError(_, _) => assert!(false),
+    };
+}
+
+// Env: PROD  => to check overload between several databases and apps
+#[test]
+#[ignore]
+fn deploy_a_production_environment_with_3_databases_and_3_apps() {
+    init();
+
+    let span = span!(
+        Level::INFO,
+        "deploy_an_environment_with_3_databases_and_3_apps"
+    );
+    let _enter = span.enter();
+
+    let context = context();
+    let context_for_deletion = context.clone_not_same_execution_id();
+    let mut environment = test_utilities::aws::environment_3_apps_3_routers_3_databases(&context);
+    environment.kind = Kind::Production;
 
     let mut environment_delete = environment.clone();
     environment_delete.action = Action::Delete;
