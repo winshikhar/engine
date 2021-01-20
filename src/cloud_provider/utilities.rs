@@ -314,8 +314,8 @@ pub fn check_domain_for(listener_helper: ListenersHelper, name_with_id : String,
 
                 info!("{}", x);
 
-                listener_helper.start_in_progress(ProgressInfo::new(
-                    ProgressScope::Environment {id: execution_id.to_string()},
+                listener_helper.started(ProgressInfo::new(
+                    ProgressScope::Router {id: domain.to_string()},
                     ProgressLevel::Info,
                     Some(x),
                     context_id,
