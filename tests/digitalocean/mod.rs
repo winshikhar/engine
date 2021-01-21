@@ -6,6 +6,7 @@ mod do_databases;
 mod do_environment;
 pub mod do_kubernetes;
 
+//noinspection ALL
 pub fn deploy_environment_on_do(
     context: &Context,
     environment_action: &EnvironmentAction,

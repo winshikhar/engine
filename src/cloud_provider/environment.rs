@@ -41,16 +41,14 @@ impl Environment {
 
     pub fn is_valid(&self) -> Result<(), EngineError> {
         for service in self.stateful_services.iter() {
-            match service.is_valid() {
-                Err(err) => return Err(err),
-                _ => {}
+            if let Err(err) = service.is_valid() {
+                return Err(err);
             }
         }
 
         for service in self.stateless_services.iter() {
-            match service.is_valid() {
-                Err(err) => return Err(err),
-                _ => {}
+            if let Err(err) = service.is_valid() {
+                return Err(err);
             }
         }
 

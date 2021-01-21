@@ -24,9 +24,9 @@ where
     F: FnMut(Result<String, Error>),
     X: FnMut(Result<String, Error>),
 {
-    match exec_with_envs_and_output("kubectl", args, envs, stdout_output, stderr_output) {
-        Err(err) => return Err(err),
-        _ => {}
+    if let Err(err) = exec_with_envs_and_output("kubectl", args, envs, stdout_output, stderr_output)
+    {
+        return Err(err);
     };
 
     Ok(())
@@ -261,10 +261,7 @@ where
 
     let first_item = result.items.first().unwrap();
 
-    let is_ready = match first_item.status.phase {
-        KubernetesPodStatusPhase::Running => true,
-        _ => false,
-    };
+    let is_ready = matches!(first_item.status.phase, KubernetesPodStatusPhase::Running);
 
     Ok(Some(is_ready))
 }
@@ -367,10 +364,7 @@ where
         },
     );
 
-    match result {
-        Ok(_) => true,
-        Err(_) => false,
-    }
+    result.is_ok()
 }
 
 pub fn kubectl_exec_create_namespace_without_labels(
@@ -391,11 +385,7 @@ where
     P: AsRef<Path>,
 {
     // don't create the namespace if already exists and not not return error in this case
-    if !kubectl_exec_is_namespace_present(
-        kubernetes_config.as_ref(),
-        namespace.clone(),
-        envs.clone(),
-    ) {
+    if !kubectl_exec_is_namespace_present(kubernetes_config.as_ref(), namespace, envs.clone()) {
         // create namespace
         let mut _envs = Vec::with_capacity(envs.len() + 1);
         _envs.push((KUBECONFIG, kubernetes_config.as_ref().to_str().unwrap()));
@@ -416,8 +406,8 @@ where
     }
 
     // additional labels
-    if labels.is_some() {
-        match kubectl_add_labels_to_namespace(kubernetes_config, namespace, labels.unwrap(), envs) {
+    if let Some(labels) = labels {
+        match kubectl_add_labels_to_namespace(kubernetes_config, namespace, labels, envs) {
             Ok(_) => {}
             Err(e) => return Err(e),
         }
@@ -442,11 +432,7 @@ where
         ));
     };
 
-    if !kubectl_exec_is_namespace_present(
-        kubernetes_config.as_ref(),
-        namespace.clone(),
-        envs.clone(),
-    ) {
+    if !kubectl_exec_is_namespace_present(kubernetes_config.as_ref(), namespace, envs.clone()) {
         return Err(SimpleError::new(
             SimpleErrorKind::Other,
             Some(format! {"Can't set labels on namespace {} because it doesn't exists", namespace}),
@@ -490,7 +476,7 @@ where
 pub fn does_contain_terraform_tfstate<P>(
     kubernetes_config: P,
     namespace: &str,
-    envs: &Vec<(&str, &str)>,
+    envs: &[(&str, &str)],
 ) -> Result<bool, SimpleError>
 where
     P: AsRef<Path>,
@@ -515,13 +501,13 @@ where
 
     match result {
         Ok(out) => {
-            if out.items.len() == 0 {
+            if out.items.is_empty() {
                 Ok(false)
             } else {
                 Ok(true)
             }
         }
-        Err(e) => return Err(e),
+        Err(e) => Err(e),
     }
 }
 

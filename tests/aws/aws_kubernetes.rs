@@ -4,11 +4,9 @@ use std::env;
 use std::fs::File;
 use std::io::Read;
 
-use gethostname;
 use test_utilities::aws::AWS_KUBERNETES_VERSION;
 use tracing::{span, Level};
 
-use qovery_engine::build_platform::GitRepository;
 use qovery_engine::cloud_provider::aws::kubernetes::EKS;
 use qovery_engine::transaction::TransactionResult;
 
@@ -37,11 +35,11 @@ fn generate_cluster_id(region: &str) -> String {
             if current_name.chars().count() < shrink_size {
                 shrink_size = current_name.chars().count()
             }
-            let mut final_name = format!("{}", &current_name[..shrink_size]);
+            let mut final_name = &current_name[..shrink_size];
             // do not end with a non alphanumeric char
             while !final_name.chars().last().unwrap().is_alphanumeric() {
                 shrink_size -= 1;
-                final_name = format!("{}", &current_name[..shrink_size]);
+                final_name = &current_name[..shrink_size];
             }
             // note ensure you use only lowercase  (uppercase are not allowed in lot of AWS resources)
             format!("{}-{}", final_name.to_lowercase(), region.to_lowercase())
@@ -77,7 +75,7 @@ fn create_and_destroy_eks_cluster_in_eu_west_3() {
 
     let region = "eu-west-3";
     let kubernetes = EKS::new(
-        context.clone(),
+        context,
         generate_cluster_id(region).as_str(),
         generate_cluster_id(region).as_str(),
         AWS_KUBERNETES_VERSION,
@@ -88,9 +86,8 @@ fn create_and_destroy_eks_cluster_in_eu_west_3() {
         nodes,
     );
 
-    match tx.create_kubernetes(&kubernetes) {
-        Err(err) => panic!("{:?}", err),
-        _ => {}
+    if let Err(err) = tx.create_kubernetes(&kubernetes) {
+        panic!("{:?}", err)
     }
 
     let _ = match tx.commit() {
@@ -98,9 +95,8 @@ fn create_and_destroy_eks_cluster_in_eu_west_3() {
         TransactionResult::Rollback(_) => assert!(false),
         TransactionResult::UnrecoverableError(_, _) => assert!(false),
     };
-    match tx.delete_kubernetes(&kubernetes) {
-        Err(err) => panic!("{:?}", err),
-        _ => {}
+    if let Err(err) = tx.delete_kubernetes(&kubernetes) {
+        panic!("{:?}", err)
     }
 
     let _ = match tx.commit() {
@@ -146,9 +142,8 @@ fn create_eks_cluster_in_us_east_2() {
         nodes,
     );
 
-    match tx.create_kubernetes(&kubernetes) {
-        Err(err) => panic!("{:?}", err),
-        _ => {}
+    if let Err(err) = tx.create_kubernetes(&kubernetes) {
+        panic!("{:?}", err)
     }
 
     let _ = match tx.commit() {
@@ -194,9 +189,8 @@ fn delete_eks_cluster_in_us_east_2() {
         nodes,
     );
 
-    match tx.delete_kubernetes(&kubernetes) {
-        Err(err) => panic!("{:?}", err),
-        _ => {}
+    if let Err(err) = tx.delete_kubernetes(&kubernetes) {
+        panic!("{:?}", err)
     }
 
     let _ = match tx.commit() {
@@ -242,9 +236,8 @@ fn delete_eks_cluster_in_eu_west_3() {
         nodes,
     );
 
-    match tx.delete_kubernetes(&kubernetes) {
-        Err(err) => panic!("{:?}", err),
-        _ => {}
+    if let Err(err) = tx.delete_kubernetes(&kubernetes) {
+        panic!("{:?}", err)
     }
 
     let _ = match tx.commit() {

@@ -73,7 +73,7 @@ pub fn checkout(repo: &Repository, commit_id: &str, repo_url: &str) -> Result<()
 
     let _ = repo.checkout_tree(&obj, None);
 
-    repo.set_head(&("refs/heads/".to_owned() + &commit_id))
+    repo.set_head(&("refs/heads/".to_owned() + commit_id))
 }
 
 pub fn checkout_submodules(repo: &Repository) -> Result<(), Error> {
@@ -86,9 +86,8 @@ pub fn checkout_submodules(repo: &Repository) -> Result<(), Error> {
                     submodule.url()
                 );
 
-                match submodule.update(true, None) {
-                    Err(e) => return Err(e),
-                    _ => (),
+                if let Err(e) = submodule.update(true, None) {
+                    return Err(e);
                 }
             }
         }

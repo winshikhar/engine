@@ -20,7 +20,7 @@ pub fn get_uuid_of_cluster_from_name(
         .headers(headers)
         .send();
 
-    return match res {
+    match res {
         Ok(response) => match response.status() {
             StatusCode::OK => {
                 let content = response.text().unwrap();
@@ -30,43 +30,37 @@ pub fn get_uuid_of_cluster_from_name(
                         Some(uuid) => Ok(uuid),
                         None => Err(SimpleError::new(
                             SimpleErrorKind::Other,
-                            Some(
-                                format!("Unable to retrieve cluster id from the cluster name {}", kube_cluster_name),
-                            ),
-                        ))
-                    }
+                            Some(format!(
+                                "Unable to retrieve cluster id from the cluster name {}",
+                                kube_cluster_name
+                            )),
+                        )),
+                    },
                     Err(e) => {
                         print!("{}", e);
                         Err(SimpleError::new(
                             SimpleErrorKind::Other,
-                            Some(
-                                "While trying to deserialize json received from Digital Ocean Kubernetes API",
-                            ),
+                            Some("While trying to deserialize json received from Digital Ocean Kubernetes API"),
                         ))
                     }
                 }
             }
             _ => Err(SimpleError::new(
                 SimpleErrorKind::Other,
-                Some(
-                    "Receive unknown status code from Digital Ocean Kubernetes API while retrieving clusters list",
-                ),
+                Some("Receive unknown status code from Digital Ocean Kubernetes API while retrieving clusters list"),
             )),
         },
-        Err(_) => {
-            Err(SimpleError::new(
-                SimpleErrorKind::Other,
-                Some("Unable to get a response from Digital Ocean Kubernetes API"),
-            ))
-        }
-    };
+        Err(_) => Err(SimpleError::new(
+            SimpleErrorKind::Other,
+            Some("Unable to get a response from Digital Ocean Kubernetes API"),
+        )),
+    }
 }
 
 fn search_uuid_cluster_for(kube_name: &str, clusters: Clusters) -> Option<String> {
     for cluster in clusters.kubernetes_clusters {
-        match cluster.name.eq(kube_name) {
-            true => return Some(cluster.id),
-            _ => {}
+        if let true = cluster.name.eq(kube_name) {
+            return Some(cluster.id);
         }
     }
     None

@@ -4,7 +4,7 @@ use qovery_engine::container_registry::docr::get_current_registry_name;
 use qovery_engine::models::{Action, Clone2, EnvironmentAction};
 use qovery_engine::transaction::TransactionResult;
 use test_utilities::digitalocean::digital_ocean_token;
-use test_utilities::utilities::{context, engine_run_test, init};
+use test_utilities::utilities::{context, engine_run_test};
 use tracing::{span, Level};
 
 // this function tests DOCR as well
@@ -18,7 +18,7 @@ fn deploy_a_working_environment_with_no_router_on_do() {
         let _enter = span.enter();
 
         let context = context();
-        let context_for_delete = context.clone_not_same_execution_id();
+        let _context_for_delete = context.clone_not_same_execution_id();
         let mut environment = test_utilities::aws::environment_only_http_server(&context);
         let mut environment_for_delete =
             test_utilities::aws::environment_only_http_server(&context);
@@ -26,7 +26,7 @@ fn deploy_a_working_environment_with_no_router_on_do() {
         environment_for_delete.routers = vec![];
         environment_for_delete.action = Action::Delete;
         let ea = EnvironmentAction::Environment(environment.clone());
-        let ea_delete = EnvironmentAction::Environment(environment_for_delete.clone());
+        let _ea_delete = EnvironmentAction::Environment(environment_for_delete);
 
         let engine = test_utilities::digitalocean::docker_cr_do_engine(&context);
         let registry = engine.container_registry();
@@ -65,7 +65,7 @@ fn deploy_a_working_environment_with_no_router_on_do() {
             TransactionResult::UnrecoverableError(_, _) => assert!(false),
         };*/
 
-        return "deploy_a_working_environment_with_no_router_on_do".to_string();
+        "deploy_a_working_environment_with_no_router_on_do".to_string()
     })
 }
 
@@ -79,8 +79,8 @@ fn deploy_a_working_environment_router_and_app_on_do() {
         let _enter = span.enter();
 
         let context = context();
-        let context_for_delete = context.clone_not_same_execution_id();
-        let mut environment = test_utilities::aws::environment_only_http_server_router(&context);
+        let _context_for_delete = context.clone_not_same_execution_id();
+        let environment = test_utilities::aws::environment_only_http_server_router(&context);
         let ea = EnvironmentAction::Environment(environment);
 
         match deploy_environment_on_do(&context, &ea) {
@@ -89,6 +89,6 @@ fn deploy_a_working_environment_router_and_app_on_do() {
             TransactionResult::UnrecoverableError(_, _) => assert!(false),
         };
 
-        return "deploy_a_working_environment_router_and_app_on_do".to_string();
+        "deploy_a_working_environment_router_and_app_on_do".to_string()
     })
 }

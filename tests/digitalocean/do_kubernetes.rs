@@ -8,13 +8,13 @@ use tracing::{error, span, Level};
 
 use qovery_engine::cloud_provider::digitalocean::common::get_uuid_of_cluster_from_name;
 use qovery_engine::cloud_provider::digitalocean::kubernetes::DOKS;
-use qovery_engine::cloud_provider::digitalocean::models::cluster::Clusters;
+
 use qovery_engine::cmd::kubectl::{kubectl_exec_create_namespace, kubectl_exec_delete_namespace};
 use qovery_engine::constants::DIGITAL_OCEAN_TOKEN;
 
 use self::test_utilities::cloudflare::dns_provider_cloudflare;
 use self::test_utilities::digitalocean::{digital_ocean_token, get_kube_cluster_name_from_uuid};
-use self::test_utilities::utilities::{engine_run_test, generate_id, init};
+use self::test_utilities::utilities::{engine_run_test, generate_id};
 use qovery_engine::cloud_provider::kubernetes::Kubernetes;
 
 //#[test]
@@ -48,30 +48,25 @@ fn create_doks_cluster_in_fra_10() {
         >(read_buf.as_str());
 
         let kubernetes = DOKS::new(
-            context.clone(),
-            cluster_id.clone(),
-            cluster_name.clone(),
+            context,
+            cluster_id,
+            cluster_name,
             DO_KUBERNETES_VERSION,
-            region.clone(),
+            region,
             &digitalocean,
             &cloudflare,
             options_result.expect("Oh my satan an error in test... Options options options"),
             nodes,
         );
-        match tx.create_kubernetes(&kubernetes) {
-            Err(err) => panic!("{:?}", err),
-            _ => {}
+        if let Err(err) = tx.create_kubernetes(&kubernetes) {
+            panic!("{:?}", err)
         }
         tx.commit();
 
         // TESTING: Kube cluster UUID is OK ?
-        let res_uuid =
-            get_uuid_of_cluster_from_name(digital_ocean_token().as_str(), cluster_name.clone());
+        let res_uuid = get_uuid_of_cluster_from_name(digital_ocean_token().as_str(), cluster_name);
         match res_uuid {
-            Ok(uuid) => assert_eq!(
-                get_kube_cluster_name_from_uuid(uuid.as_str()),
-                cluster_name.clone()
-            ),
+            Ok(uuid) => assert_eq!(get_kube_cluster_name_from_uuid(uuid.as_str()), cluster_name),
             Err(e) => {
                 error!("{:?}", e.message);
                 assert!(false);
@@ -87,7 +82,7 @@ fn create_doks_cluster_in_fra_10() {
                 let namespace_to_test = generate_id();
                 match kubectl_exec_create_namespace(
                     file.clone(),
-                    namespace_to_test.clone().as_str(),
+                    namespace_to_test.as_str(),
                     None,
                     do_credentials_envs.clone(),
                 ) {
@@ -107,6 +102,6 @@ fn create_doks_cluster_in_fra_10() {
             }
             Err(_) => assert!(false),
         }
-        return "create_doks_cluster_in_fra_10".to_string();
+        "create_doks_cluster_in_fra_10".to_string()
     })
 }

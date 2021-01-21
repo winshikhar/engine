@@ -108,8 +108,8 @@ pub fn cloud_provider_digitalocean(context: &Context) -> DO {
         digital_ocean_spaces_secret_key().as_str(),
         "digital-ocean-test-cluster",
         TerraformStateCredentials {
-            access_key_id: terraform_aws_access_key_id().to_string(),
-            secret_access_key: terraform_aws_secret_access_key().to_string(),
+            access_key_id: terraform_aws_access_key_id(),
+            secret_access_key: terraform_aws_secret_access_key(),
             region: "eu-west-3".to_string(),
         },
     )
@@ -131,12 +131,12 @@ pub fn get_kube_cluster_name_from_uuid(uuid: &str) -> String {
                 let content = response.text().unwrap();
                 let res_cluster = serde_json::from_str::<Cluster>(&content);
                 match res_cluster {
-                    Ok(cluster) => return cluster.kubernetes_cluster.name.clone(),
+                    Ok(cluster) => cluster.kubernetes_cluster.name,
                     Err(e) => panic!(e),
                 }
             }
-            _ => return String::from(""),
+            _ => String::from(""),
         },
-        Err(e) => return String::from(""),
+        Err(_) => String::from(""),
     }
 }

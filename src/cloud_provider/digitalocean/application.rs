@@ -24,7 +24,7 @@ pub struct Application {
     name: String,
     private_port: Option<u16>,
     total_cpus: String,
-    cpu_burst: String,
+    _cpu_burst: String,
     total_ram_in_mib: u32,
     total_instances: u16,
     start_timeout_in_seconds: u32,
@@ -58,7 +58,7 @@ impl Application {
             name: name.to_string(),
             private_port,
             total_cpus,
-            cpu_burst,
+            _cpu_burst: cpu_burst,
             total_ram_in_mib,
             total_instances,
             start_timeout_in_seconds,
@@ -163,7 +163,10 @@ impl Service for Application {
             Some(registry_url) => context.insert("image_name_with_tag", registry_url.as_str()),
             None => {
                 let image_name_with_tag = self.image.name_with_tag();
-                warn!("there is no registry url, use image name with tag with the default container registry: {}", image_name_with_tag.as_str());
+                warn!(
+                    "there is no registry url, use image name with tag with the default container registry: {}",
+                    image_name_with_tag.as_str()
+                );
                 context.insert("image_name_with_tag", image_name_with_tag.as_str());
             }
         }
@@ -205,7 +208,7 @@ impl Service for Application {
             })
             .collect::<Vec<_>>();
 
-        let is_storage = storage.len() > 0;
+        let is_storage = !storage.is_empty();
 
         context.insert("storage", &storage);
         context.insert("is_storage", &is_storage);
@@ -253,13 +256,15 @@ impl Create for Application {
 
         match cluster_uuid_res {
             // ensure DO registry is linked to k8s cluster
-            Ok(uuid) => match subscribe_kube_cluster_to_container_registry(
-                digitalocean.token.as_str(),
-                uuid.as_str(),
-            ) {
-                Ok(_) => info!("Container registry is well linked with the Cluster"),
-                Err(e) => error!("Unable to link cluster to registry {:?}", e.message),
-            },
+            Ok(uuid) => {
+                match subscribe_kube_cluster_to_container_registry(
+                    digitalocean.token.as_str(),
+                    uuid.as_str(),
+                ) {
+                    Ok(_) => info!("Container registry is well linked with the Cluster"),
+                    Err(e) => error!("Unable to link cluster to registry {:?}", e.message),
+                }
+            }
             Err(e) => error!("Unable to get cluster uuid {:?}", e.message),
         };
 

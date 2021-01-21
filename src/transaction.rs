@@ -203,13 +203,12 @@ impl<'a> Transaction<'a> {
                 Ok(build_result) => build_result,
             };
 
-            match external_service.to_application(
+            if let Some(app) = external_service.to_application(
                 self.engine.context(),
                 &build_result.build.image,
                 self.engine.cloud_provider(),
             ) {
-                Some(app) => applications.push(app),
-                None => {}
+                applications.push(app)
             }
         }
 
@@ -227,13 +226,12 @@ impl<'a> Transaction<'a> {
                 Ok(build_result) => build_result,
             };
 
-            match application.to_application(
+            if let Some(app) = application.to_application(
                 self.engine.context(),
                 &build_result.build.image,
                 self.engine.cloud_provider(),
             ) {
-                Some(app) => applications.push(app),
-                None => {}
+                applications.push(app)
             }
         }
 
@@ -281,18 +279,15 @@ impl<'a> Transaction<'a> {
         &self,
         environment: &crate::cloud_provider::environment::Environment,
     ) -> TransactionResult {
-        match environment.is_valid() {
-            Err(engine_error) => {
-                warn!("ROLLBACK STARTED! an error occurred {:?}", engine_error);
-                return match self.rollback() {
-                    Ok(_) => TransactionResult::Rollback(engine_error),
-                    Err(err) => {
-                        error!("ROLLBACK FAILED! fatal error: {:?}", err);
-                        TransactionResult::UnrecoverableError(engine_error, err)
-                    }
-                };
-            }
-            _ => {}
+        if let Err(engine_error) = environment.is_valid() {
+            warn!("ROLLBACK STARTED! an error occurred {:?}", engine_error);
+            return match self.rollback() {
+                Ok(_) => TransactionResult::Rollback(engine_error),
+                Err(err) => {
+                    error!("ROLLBACK FAILED! fatal error: {:?}", err);
+                    TransactionResult::UnrecoverableError(engine_error, err)
+                }
+            };
         };
 
         TransactionResult::Ok
@@ -303,16 +298,14 @@ impl<'a> Transaction<'a> {
             match step {
                 Step::CreateKubernetes(kubernetes) => {
                     // revert kubernetes creation
-                    match kubernetes.on_create_error() {
-                        Err(err) => return Err(RollbackError::CommitError(err)),
-                        _ => {}
+                    if let Err(err) = kubernetes.on_create_error() {
+                        return Err(RollbackError::CommitError(err));
                     };
                 }
                 Step::DeleteKubernetes(kubernetes) => {
                     // revert kubernetes deletion
-                    match kubernetes.on_delete_error() {
-                        Err(err) => return Err(RollbackError::CommitError(err)),
-                        _ => {}
+                    if let Err(err) = kubernetes.on_delete_error() {
+                        return Err(RollbackError::CommitError(err));
                     };
                 }
                 Step::BuildEnvironment(_environment_action, _option) => {
@@ -350,26 +343,24 @@ impl<'a> Transaction<'a> {
             for application in environment.applications.iter() {
                 let build = application.to_build();
 
-                match application.to_application(
+                if let Some(x) = application.to_application(
                     self.engine.context(),
                     &build.image,
                     self.engine.cloud_provider(),
                 ) {
-                    Some(x) => _applications.push(x),
-                    None => {}
+                    _applications.push(x)
                 }
             }
 
             for external_service in environment.external_services.iter() {
                 let build = external_service.to_build();
 
-                match external_service.to_application(
+                if let Some(x) = external_service.to_application(
                     self.engine.context(),
                     &build.image,
                     self.engine.cloud_provider(),
                 ) {
-                    Some(x) => _applications.push(x),
-                    None => {}
+                    _applications.push(x)
                 }
             }
 
@@ -515,34 +506,28 @@ impl<'a> Transaction<'a> {
                     applications_by_environment.insert(target_environment, applications);
 
                     // build as well the failover environment, retention could remove the application image
-                    match environment_action {
-                        EnvironmentAction::EnvironmentWithFailover(_, fe) => {
-                            let apps_result = match self._build_applications(fe, option) {
-                                Ok(applications) => {
-                                    match self._push_applications(applications, option) {
-                                        Ok(results) => {
-                                            let applications = results
-                                                .into_iter()
-                                                .map(|(app, _)| app)
-                                                .collect::<Vec<_>>();
+                    if let EnvironmentAction::EnvironmentWithFailover(_, fe) = environment_action {
+                        let apps_result = match self._build_applications(fe, option) {
+                            Ok(applications) => match self._push_applications(applications, option)
+                            {
+                                Ok(results) => {
+                                    let applications =
+                                        results.into_iter().map(|(app, _)| app).collect::<Vec<_>>();
 
-                                            Ok(applications)
-                                        }
-                                        Err(err) => Err(err),
-                                    }
+                                    Ok(applications)
                                 }
                                 Err(err) => Err(err),
-                            };
-                            if apps_result.is_err() {
-                                // should never be triggered because core always should ask for working failover environment
-                                let commit_error = apps_result.err().unwrap();
-                                error!(
-                                    "An error occurred on failover application  {:?}",
-                                    commit_error
-                                );
-                            }
+                            },
+                            Err(err) => Err(err),
+                        };
+                        if apps_result.is_err() {
+                            // should never be triggered because core always should ask for working failover environment
+                            let commit_error = apps_result.err().unwrap();
+                            error!(
+                                "An error occurred on failover application  {:?}",
+                                commit_error
+                            );
                         }
-                        _ => {}
                     };
                 }
                 Step::DeployEnvironment(kubernetes, environment_action) => {

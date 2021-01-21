@@ -206,7 +206,9 @@ impl Service for Router {
                             }
                         }
                         _ => {
-                            error!("can't fetch external_ingress_hostname_custom - what's wrong? This must never happened");
+                            error!(
+                                "can't fetch external_ingress_hostname_custom - what's wrong? This must never happened"
+                            );
                         }
                     }
                     // FIXME app_id to appId
@@ -397,8 +399,8 @@ impl Create for Router {
                         }
                         Err(err) => {
                             error!(
-                                "Waiting Digital Ocean LoadBalancer endpoint to be available to be able to configure TLS"
-                            );
+                            "Waiting Digital Ocean LoadBalancer endpoint to be available to be able to configure TLS"
+                        );
                             OperationResult::Retry(err)
                         }
                     }
@@ -455,7 +457,7 @@ impl Create for Router {
     }
 
     fn on_create_check(&self) -> Result<(), EngineError> {
-        return Ok(());
+        Ok(())
     }
 
     fn on_create_error(&self, target: &DeploymentTarget) -> Result<(), EngineError> {

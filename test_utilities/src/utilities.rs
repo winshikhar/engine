@@ -12,8 +12,6 @@ use std::io::Write;
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 use tracing::info;
-use tracing_subscriber;
-use tracing_subscriber::util::SubscriberInitExt;
 
 use qovery_engine::build_platform::local_docker::LocalDocker;
 use qovery_engine::cmd;
@@ -40,7 +38,8 @@ pub fn init() -> Instant {
             .with_current_span(false)
             .try_init(),
         None => tracing_subscriber::fmt().try_init(),
-    };
+    }
+    .unwrap();
 
     info!(
         "running from current directory: {}",
@@ -50,22 +49,26 @@ pub fn init() -> Instant {
     Instant::now()
 }
 
-pub fn teardown(startTime: Instant, testName: String){
+pub fn teardown(start_time: Instant, test_name: String) {
     let end = Instant::now();
-    let elapsed = startTime.to(end);
-    info!("{} seconds for test {}", elapsed.as_seconds_f64(),testName);
+    let elapsed = end - start_time;
+    info!(
+        "{} seconds for test {}",
+        elapsed.as_seconds_f64(),
+        test_name
+    );
 }
 
-pub fn engine_run_test<T>(test: T) -> ()
-    where T: FnOnce() -> String
+pub fn engine_run_test<T>(test: T)
+where
+    T: FnOnce() -> String,
 {
     let start = init();
 
     let test_name = test();
 
-    teardown(start,test_name);
+    teardown(start, test_name);
 }
-
 
 pub fn generate_id() -> String {
     // Should follow DNS naming convention https://tools.ietf.org/html/rfc1035
@@ -92,7 +95,7 @@ pub fn check_all_connections(env: &Environment) -> Vec<bool> {
 
         checking.push(curl_path(path_to_test.as_str()));
     }
-    return checking;
+    checking
 }
 
 fn curl_path(path: &str) -> bool {
@@ -100,11 +103,11 @@ fn curl_path(path: &str) -> bool {
     easy.url(path).unwrap();
     let res = easy.perform();
     match res {
-        Ok(_) => return true,
+        Ok(_) => true,
 
         Err(e) => {
             println!("TEST Error : while trying to call {}", e);
-            return false;
+            false
         }
     }
 }
@@ -112,7 +115,7 @@ fn curl_path(path: &str) -> bool {
 pub fn context() -> Context {
     let execution_id = execution_id();
     let home_dir = std::env::var("WORKSPACE_ROOT_DIR")
-        .unwrap_or(home_dir().unwrap().to_str().unwrap().to_string());
+        .unwrap_or_else(|_| home_dir().unwrap().to_str().unwrap().to_string());
     let lib_root_dir = std::env::var("LIB_ROOT_DIR").expect("LIB_ROOT_DIR is mandatory");
     let metadata = Metadata {
         test: Option::from(true),
@@ -165,9 +168,8 @@ where
     P: AsRef<Path>,
 {
     // return the file if it already exists
-    let _ = match File::open(file_path.as_ref()) {
-        Ok(f) => return Ok(f),
-        Err(_) => {}
+    let _ = if let Ok(f) = File::open(file_path.as_ref()) {
+        return Ok(f);
     };
 
     let file_content_result = retry::retry(Fibonacci::from_millis(3000).take(5), || {
@@ -234,8 +236,7 @@ pub fn is_pod_restarted_aws_env(
 ) -> (bool, String) {
     let namespace_name = format!(
         "{}-{}",
-        &environment_check.project_id.clone(),
-        &environment_check.id.clone(),
+        &environment_check.project_id, &environment_check.id,
     );
 
     let access_key = aws_access_key_id();
@@ -252,24 +253,24 @@ pub fn is_pod_restarted_aws_env(
         aws_secret_access_key().as_str(),
     );
 
-    match kubernetes_config {
+    return match kubernetes_config {
         Ok(path) => {
             let restarted_database = cmd::kubectl::kubectl_exec_get_number_of_restart(
                 path.as_str(),
-                namespace_name.clone().as_str(),
+                namespace_name.as_str(),
                 pod_to_check,
                 aws_credentials_envs,
             );
             match restarted_database {
                 Ok(count) => match count.trim().eq("0") {
-                    true => return (true, "0".to_string()),
-                    false => return (true, count.to_string()),
+                    true => (true, "0".to_string()),
+                    false => (true, count.to_string()),
                 },
-                _ => return (false, "".to_string()),
+                _ => (false, "".to_string()),
             }
         }
-        Err(_e) => return (false, "".to_string()),
-    }
+        Err(_e) => (false, "".to_string()),
+    };
 }
 
 pub fn execution_id() -> String {

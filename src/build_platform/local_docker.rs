@@ -36,16 +36,14 @@ impl LocalDocker {
             None => vec![],
         };
 
-        Ok(
-            match crate::cmd::utilities::exec_with_envs(
+        Ok(matches!(
+            crate::cmd::utilities::exec_with_envs(
                 "docker",
                 vec!["image", "inspect", image.name_with_tag().as_str()],
                 envs,
-            ) {
-                Ok(_) => true,
-                _ => false,
-            },
-        )
+            ),
+            Ok(_)
+        ))
     }
 }
 
@@ -161,18 +159,15 @@ impl BuildPlatform for LocalDocker {
         let dockerfile_complete_path =
             format!("{}/{}", into_dir.as_str(), dockerfile_relative_path);
 
-        match Path::new(dockerfile_complete_path.as_str()).exists() {
-            false => {
-                let message = format!(
-                    "Unable to find Dockerfile path {}",
-                    dockerfile_complete_path.as_str()
-                );
+        if let false = Path::new(dockerfile_complete_path.as_str()).exists() {
+            let message = format!(
+                "Unable to find Dockerfile path {}",
+                dockerfile_complete_path.as_str()
+            );
 
-                error!("{}", &message);
+            error!("{}", &message);
 
-                return Err(self.engine_error(EngineErrorCause::Internal, message));
-            }
-            _ => {}
+            return Err(self.engine_error(EngineErrorCause::Internal, message));
         }
 
         let mut disable_build_cache = false;

@@ -47,7 +47,7 @@ where
                 tera::ErrorKind::CallFunction(x) => format!("call function: {}", x),
                 tera::ErrorKind::CallFilter(x) => format!("call filter: {}", x),
                 tera::ErrorKind::CallTest(x) => format!("call test: {}", x),
-                tera::ErrorKind::__Nonexhaustive => format!("non exhaustive error"),
+                tera::ErrorKind::__Nonexhaustive => "non exhaustive error".to_string(),
             };
 
             error!("{}", context.clone().into_json());
@@ -72,7 +72,7 @@ where
 {
     match crate::fs::copy_files(from.as_ref(), to.as_ref(), true) {
         Err(err) => Err(SimpleError::from(err)),
-        Ok(x) => Ok(x),
+        Ok(_) => Ok(()),
     }
 }
 
@@ -104,12 +104,12 @@ where
 
     let mut results: Vec<RenderedTemplate> = vec![];
 
-    for file in files.into_iter() {
+    for file in files.iter() {
         let path_str = file.path().to_str().unwrap();
         let j2_path = path_str.replace(root_dir_str, "");
 
         let j2_file_name = file.file_name().to_str().unwrap();
-        let j2_path_split = j2_path.split("/").collect::<Vec<_>>();
+        let j2_path_split = j2_path.split('/').collect::<Vec<_>>();
         let j2_root_path: String = j2_path_split.as_slice()[..j2_path_split.len() - 1].join("/");
         let file_name = j2_file_name.replace(".j2", "");
 
@@ -128,9 +128,9 @@ pub fn write_rendered_templates(
     for rt in rendered_templates {
         let dest = format!("{}/{}", into.to_str().unwrap(), rt.path_and_file_name());
 
-        if dest.contains("/") {
+        if dest.contains('/') {
             // create the parent directories
-            let s_dest = dest.split("/").collect::<Vec<_>>();
+            let s_dest = dest.split('/').collect::<Vec<_>>();
             let dir: String = s_dest.as_slice()[..s_dest.len() - 1].join("/");
             let _ = fs::create_dir_all(dir);
         }
@@ -146,9 +146,8 @@ pub fn write_rendered_templates(
 
         // perform spcific action based on the extension
         let extension = Path::new(&dest).extension().and_then(OsStr::to_str);
-        match extension {
-            Some("sh") => set_file_permission(&f, 0o755),
-            _ => {}
+        if let Some("sh") = extension {
+            set_file_permission(&f, 0o755)
         }
     }
 

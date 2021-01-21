@@ -113,41 +113,35 @@ impl ECR {
         // READ https://docs.aws.amazon.com/AmazonECR/latest/userguide/docker-push-ecr-image.html
         // docker tag e9ae3c220b23 aws_account_id.dkr.ecr.region.amazonaws.com/my-web-app
 
-        match cmd::utilities::exec_with_envs(
+        if cmd::utilities::exec_with_envs(
             "docker",
             vec!["tag", image.name_with_tag().as_str(), dest.as_str()],
             self.docker_envs(),
-        ) {
-            Err(_) => {
-                return Err(self.engine_error(
-                    EngineErrorCause::Internal,
-                    format!(
-                        "failed to tag image ({}) {:?}",
-                        image.name_with_tag(),
-                        image,
-                    ),
-                ));
-            }
-            _ => {}
+        )
+        .is_err()
+        {
+            return Err(self.engine_error(
+                EngineErrorCause::Internal,
+                format!(
+                    "failed to tag image ({}) {:?}",
+                    image.name_with_tag(),
+                    image,
+                ),
+            ));
         };
 
         // docker push aws_account_id.dkr.ecr.region.amazonaws.com/my-web-app
-        match cmd::utilities::exec_with_envs(
-            "docker",
-            vec!["push", dest.as_str()],
-            self.docker_envs(),
-        ) {
-            Err(_) => {
-                return Err(self.engine_error(
-                    EngineErrorCause::Internal,
-                    format!(
-                        "failed to push image {:?} into ECR {}",
-                        image,
-                        self.name_with_id(),
-                    ),
-                ));
-            }
-            _ => {}
+        if cmd::utilities::exec_with_envs("docker", vec!["push", dest.as_str()], self.docker_envs())
+            .is_err()
+        {
+            return Err(self.engine_error(
+                EngineErrorCause::Internal,
+                format!(
+                    "failed to push image {:?} into ECR {}",
+                    image,
+                    self.name_with_id(),
+                ),
+            ));
         };
 
         let mut image = image.clone();
@@ -162,8 +156,8 @@ impl ECR {
         crr.repository_name = image.name.clone();
 
         let r = async_run(self.ecr_client().create_repository(crr));
-        match r {
-            Err(err) => match err {
+        if let Err(err) = r {
+            match err {
                 RusotoError::Service(ref err) => info!("{:?}", err),
                 _ => {
                     return Err(self.engine_error(
@@ -175,8 +169,7 @@ impl ECR {
                         ),
                     ));
                 }
-            },
-            _ => {}
+            }
         }
 
         let mut plp = PutLifecyclePolicyRequest::default();
@@ -221,10 +214,9 @@ impl ECR {
 
     fn get_or_create_repository(&self, image: &Image) -> Result<Repository, EngineError> {
         // check if the repository already exists
-        let repository = self.get_repository(&image);
-        if repository.is_some() {
+        if let Some(repository) = self.get_repository(&image) {
             info!("ECR repository {} already exists", image.name.as_str());
-            return Ok(repository.unwrap());
+            return Ok(repository);
         }
 
         self.create_repository(&image)
@@ -300,7 +292,7 @@ impl ContainerRegistry for ECR {
                     let decoded_token = base64::decode(b64_token).unwrap();
                     let token = std::str::from_utf8(decoded_token.as_slice()).unwrap();
 
-                    let s_token: Vec<&str> = token.split(":").collect::<Vec<_>>();
+                    let s_token: Vec<&str> = token.split(':').collect::<Vec<_>>();
 
                     (
                         s_token.first().unwrap().to_string(),
@@ -347,7 +339,7 @@ impl ContainerRegistry for ECR {
             }
         };
 
-        match cmd::utilities::exec_with_envs(
+        if cmd::utilities::exec_with_envs(
             "docker",
             vec![
                 "login",
@@ -358,14 +350,16 @@ impl ContainerRegistry for ECR {
                 endpoint_url.as_str(),
             ],
             self.docker_envs(),
-        ) {
-            Err(_) => return Err(
-                self.engine_error(
-                    EngineErrorCause::User("Your ECR account seems to be no longer valid (bad Credentials). \
-                    Please contact your Organization administrator to fix or change the Credentials."),
-                    format!("failed to login to ECR {}", self.name_with_id()))
-            ),
-            _ => {}
+        )
+        .is_err()
+        {
+            return Err(self.engine_error(
+                EngineErrorCause::User(
+                    "Your ECR account seems to be no longer valid (bad Credentials). \
+                Please contact your Organization administrator to fix or change the Credentials.",
+                ),
+                format!("failed to login to ECR {}", self.name_with_id()),
+            ));
         };
 
         let dest = format!(

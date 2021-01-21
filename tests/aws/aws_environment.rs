@@ -122,7 +122,7 @@ fn deploy_a_working_environment_with_no_router_on_aws_eks() {
             TransactionResult::Rollback(_) => assert!(false),
             TransactionResult::UnrecoverableError(_, _) => assert!(false),
         };
-        return "deploy_a_working_environment_with_no_router_on_aws_eks".to_string();
+        "deploy_a_working_environment_with_no_router_on_aws_eks".to_string()
     })
 }
 
@@ -148,7 +148,7 @@ fn deploy_dockerfile_not_exist() {
                 app
             })
             .collect::<Vec<qovery_engine::models::Application>>();
-        let mut environment_for_delete = environment.clone();
+        let environment_for_delete = environment.clone();
 
         let ea = EnvironmentAction::Environment(environment);
         let ea_delete = EnvironmentAction::Environment(environment_for_delete);
@@ -164,7 +164,7 @@ fn deploy_dockerfile_not_exist() {
             TransactionResult::Rollback(_) => assert!(false),
             TransactionResult::UnrecoverableError(_, _) => assert!(false),
         };
-        return "deploy_dockerfile_not_exist".to_string();
+        "deploy_dockerfile_not_exist".to_string()
     })
 }
 
@@ -201,7 +201,7 @@ fn deploy_a_not_working_environment_with_no_router_on_aws_eks() {
             TransactionResult::UnrecoverableError(_, _) => assert!(true),
         };
 
-        return "deploy_a_not_working_environment_with_no_router_on_aws_eks".to_string();
+        "deploy_a_not_working_environment_with_no_router_on_aws_eks".to_string()
     })
 }
 
@@ -232,7 +232,7 @@ fn deploy_a_working_environment_with_domain() {
             TransactionResult::Rollback(_) => assert!(false),
             TransactionResult::UnrecoverableError(_, _) => assert!(false),
         };
-        return "deploy_a_working_environment_with_domain".to_string();
+        "deploy_a_working_environment_with_domain".to_string()
     })
 }
 
@@ -282,7 +282,7 @@ fn deploy_a_working_environment_with_custom_domain() {
             TransactionResult::Rollback(_) => assert!(false),
             TransactionResult::UnrecoverableError(_, _) => assert!(false),
         };
-        return "deploy_a_working_environment_with_custom_domain".to_string();
+        "deploy_a_working_environment_with_custom_domain".to_string()
     })
 }
 
@@ -337,7 +337,7 @@ fn deploy_a_working_environment_with_storage_on_aws_eks() {
             TransactionResult::Rollback(_) => assert!(false),
             TransactionResult::UnrecoverableError(_, _) => assert!(false),
         };
-        return "deploy_a_working_environment_with_storage_on_aws_eks".to_string();
+        "deploy_a_working_environment_with_storage_on_aws_eks".to_string()
     })
 }
 
@@ -386,7 +386,7 @@ fn redeploy_same_app_with_ebs() {
             TransactionResult::UnrecoverableError(_, _) => assert!(false),
         };
         let app_name = format!("{}-0", &environment_check1.applications[0].name);
-        let (_, number) = is_pod_restarted_aws_env(environment_check1, app_name.clone().as_str());
+        let (_, number) = is_pod_restarted_aws_env(environment_check1, app_name.as_str());
 
         match deploy_environment(&context_bis, &ea2) {
             TransactionResult::Ok => assert!(true),
@@ -402,7 +402,7 @@ fn redeploy_same_app_with_ebs() {
             TransactionResult::Rollback(_) => assert!(false),
             TransactionResult::UnrecoverableError(_, _) => assert!(false),
         };
-        return "redeploy_same_app_with_ebs".to_string();
+        "redeploy_same_app_with_ebs".to_string()
     })
 }
 
@@ -536,7 +536,7 @@ fn deploy_a_not_working_environment_and_after_working_environment() {
             TransactionResult::Rollback(_) => assert!(false),
             TransactionResult::UnrecoverableError(_, _) => assert!(false),
         };
-        return "deploy_a_not_working_environment_and_after_working_environment".to_string();
+        "deploy_a_not_working_environment_and_after_working_environment".to_string()
     })
 }
 
@@ -569,7 +569,7 @@ fn deploy_ok_fail_fail_ok_environment() {
 
     // not working 2
     let context_for_not_working_2 = context.clone_not_same_execution_id();
-    let mut not_working_env_2 = not_working_env_1.clone();
+    let not_working_env_2 = not_working_env_1.clone();
 
     // work for delete
     let context_for_delete = context.clone_not_same_execution_id();
@@ -645,7 +645,7 @@ fn deploy_a_non_working_environment_with_no_failover_on_aws_eks() {
             TransactionResult::Rollback(_) => assert!(false),
             TransactionResult::UnrecoverableError(_, _) => assert!(false),
         };
-        return "deploy_a_non_working_environment_with_no_failover_on_aws_eks".to_string();
+        "deploy_a_non_working_environment_with_no_failover_on_aws_eks".to_string()
     })
 }
 

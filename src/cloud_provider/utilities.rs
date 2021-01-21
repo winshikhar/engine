@@ -1,15 +1,15 @@
 use std::collections::HashMap;
 
-use crate::error::{StringError, EngineError, EngineErrorCause, EngineErrorScope};
+use crate::error::{EngineError, EngineErrorCause, EngineErrorScope, StringError};
+use crate::models::{ListenersHelper, ProgressInfo, ProgressLevel, ProgressScope};
 use core::option::Option::{None, Some};
 use core::result::Result;
 use core::result::Result::{Err, Ok};
-use crate::models::{ListenersHelper, ProgressScope, ProgressInfo, ProgressLevel};
-use trust_dns_resolver::config::{ResolverOpts, ResolverConfig};
-use trust_dns_resolver::Resolver;
+use itertools::Itertools;
 use retry::delay::Fixed;
 use retry::OperationResult;
-use itertools::Itertools;
+use trust_dns_resolver::config::{ResolverConfig, ResolverOpts};
+use trust_dns_resolver::Resolver;
 
 pub fn get_self_hosted_postgres_version(requested_version: &str) -> Result<String, StringError> {
     let mut supported_postgres_versions = HashMap::new();
@@ -97,8 +97,8 @@ pub fn get_supported_version_to_use(
         return match all_supported_versions.get(&format!(
             "{}.{}.{}",
             version.major,
-            version.minor.unwrap().to_string(),
-            version.patch.unwrap().to_string()
+            version.minor.unwrap(),
+            version.patch.unwrap()
         )) {
             Some(version) => Ok(version.to_string()),
             None => {
@@ -112,9 +112,11 @@ pub fn get_supported_version_to_use(
 
     // if a minor version is required
     if version.minor.is_some() {
-        return match all_supported_versions
-            .get(&format!("{}.{}", version.major, version.minor.unwrap()).to_string())
-        {
+        return match all_supported_versions.get(&format!(
+            "{}.{}",
+            version.major,
+            version.minor.unwrap()
+        )) {
             Some(version) => Ok(version.to_string()),
             None => {
                 return Err(format!(
@@ -128,12 +130,10 @@ pub fn get_supported_version_to_use(
     // if only a major version is required
     match all_supported_versions.get(&version.major) {
         Some(version) => Ok(version.to_string()),
-        None => {
-            return Err(format!(
-                "{} {} version is not supported",
-                database_name, version_to_check
-            ));
-        }
+        None => Err(format!(
+            "{} {} version is not supported",
+            database_name, version_to_check
+        )),
     }
 }
 
@@ -147,7 +147,7 @@ pub fn generate_supported_version(
     suffix_version: Option<String>,
 ) -> HashMap<String, String> {
     let mut supported_versions = HashMap::new();
-    let mut latest_major_version = String::new();
+    let latest_major_version;
 
     // blank suffix if not requested
     let suffix = match suffix_version {
@@ -228,7 +228,7 @@ pub struct VersionsNumber {
 }
 
 fn get_version_number(version: &str) -> Result<VersionsNumber, StringError> {
-    let mut version_split = version.split(".");
+    let mut version_split = version.split('.');
 
     let major = match version_split.next() {
         Some(major) => major.to_string(),
@@ -252,8 +252,13 @@ fn get_version_number(version: &str) -> Result<VersionsNumber, StringError> {
     })
 }
 
-pub fn check_domain_for(listener_helper: ListenersHelper, name_with_id : String, domains_to_check : Vec<&str>, execution_id: &str, context_id: &str) -> Result<(),EngineError>{
-
+pub fn check_domain_for(
+    listener_helper: ListenersHelper,
+    _name_with_id: String,
+    domains_to_check: Vec<&str>,
+    execution_id: &str,
+    context_id: &str,
+) -> Result<(), EngineError> {
     let mut resolver_options = ResolverOpts::default();
     resolver_options.cache_size = 0;
     resolver_options.use_hosts_file = false;
@@ -266,18 +271,20 @@ pub fn check_domain_for(listener_helper: ListenersHelper, name_with_id : String,
             return Err(EngineError::new(
                 EngineErrorCause::Internal,
                 EngineErrorScope::Engine,
-               execution_id,
+                execution_id,
                 Some(format!(
                     "Let's check domain resolution for '{}'. Please wait, it can take some time...",
                     domains
-                ))
+                )),
             ));
         }
     };
 
     for domain in domains_to_check {
         listener_helper.start_in_progress(ProgressInfo::new(
-            ProgressScope::Environment {id: execution_id.to_string()},
+            ProgressScope::Environment {
+                id: execution_id.to_string(),
+            },
             ProgressLevel::Info,
             Some(format!(
                 "Let's check domain resolution for '{}'. Please wait, it can take some time...",
@@ -298,10 +305,12 @@ pub fn check_domain_for(listener_helper: ListenersHelper, name_with_id : String,
                 info!("{}", x);
 
                 listener_helper.start_in_progress(ProgressInfo::new(
-                    ProgressScope::Environment {id: execution_id.to_string()},
+                    ProgressScope::Environment {
+                        id: execution_id.to_string(),
+                    },
                     ProgressLevel::Info,
                     Some(x),
-                    execution_id.clone().to_string(),
+                    execution_id,
                 ));
 
                 OperationResult::Retry(err)
@@ -315,7 +324,9 @@ pub fn check_domain_for(listener_helper: ListenersHelper, name_with_id : String,
                 info!("{}", x);
 
                 listener_helper.start_in_progress(ProgressInfo::new(
-                    ProgressScope::Environment {id: execution_id.to_string()},
+                    ProgressScope::Environment {
+                        id: execution_id.to_string(),
+                    },
                     ProgressLevel::Info,
                     Some(x),
                     context_id,
@@ -331,7 +342,9 @@ pub fn check_domain_for(listener_helper: ListenersHelper, name_with_id : String,
                 warn!("{}", message);
 
                 listener_helper.error(ProgressInfo::new(
-                    ProgressScope::Environment {id: execution_id.to_string()},
+                    ProgressScope::Environment {
+                        id: execution_id.to_string(),
+                    },
                     ProgressLevel::Warn,
                     Some(message),
                     context_id,
@@ -341,5 +354,4 @@ pub fn check_domain_for(listener_helper: ListenersHelper, name_with_id : String,
     }
 
     Ok(())
-
 }

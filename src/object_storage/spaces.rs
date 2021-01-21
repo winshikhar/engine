@@ -127,11 +127,11 @@ impl ObjectStorage for Spaces {
         Ok(())
     }
 
-    fn create_bucket(&self, bucket_name: &str) -> Result<(), EngineError> {
+    fn create_bucket(&self, _bucket_name: &str) -> Result<(), EngineError> {
         unimplemented!()
     }
 
-    fn delete_bucket(&self, bucket_name: &str) -> Result<(), EngineError> {
+    fn delete_bucket(&self, _bucket_name: &str) -> Result<(), EngineError> {
         unimplemented!()
     }
 
@@ -198,7 +198,12 @@ impl ObjectStorage for Spaces {
         }
     }
 
-    fn put(&self, bucket_name: &str, object_key: &str, file_path: &str) -> Result<(), EngineError> {
+    fn put(
+        &self,
+        _bucket_name: &str,
+        _object_key: &str,
+        _file_path: &str,
+    ) -> Result<(), EngineError> {
         Err(self.engine_error(Internal, "spaces.put(..) is not implemented".to_string()))
     }
 }

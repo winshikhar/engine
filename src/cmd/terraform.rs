@@ -11,7 +11,7 @@ fn terraform_exec_with_init_validate_plan(root_dir: &str) -> Result<(), SimpleEr
     let result = retry::retry(Fixed::from_millis(3000).take(5), || {
         let try_result = terraform_exec(root_dir, vec!["init"]);
         match try_result {
-            Ok(out) => OperationResult::Ok(out),
+            Ok(_) => OperationResult::Ok(()),
             Err(err) => OperationResult::Err(format!("Command error: {:?}", err)),
         }
     });
@@ -34,12 +34,9 @@ fn terraform_exec_with_init_validate_plan(root_dir: &str) -> Result<(), SimpleEr
             return Err(e);
         }
         _ => {
-            match terraform_exec(root_dir, vec!["plan", "-out", "tf_plan"]) {
-                Err(e) => {
-                    error!("While trying to Terraform plan the rendered templates");
-                    return Err(e);
-                }
-                Ok(_) => {}
+            if let Err(e) = terraform_exec(root_dir, vec!["plan", "-out", "tf_plan"]) {
+                error!("While trying to Terraform plan the rendered templates");
+                return Err(e);
             };
         }
     };

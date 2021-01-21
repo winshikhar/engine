@@ -427,8 +427,6 @@ fn get_managed_postgres_version(requested_version: &str) -> Result<String, Strin
 
 #[cfg(test)]
 mod tests_postgres {
-    use std::collections::HashMap;
-
     use crate::cloud_provider::aws::databases::postgresql::get_postgres_version;
 
     #[test]

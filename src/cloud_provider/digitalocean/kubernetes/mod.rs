@@ -101,10 +101,7 @@ impl<'a> DOKS<'a> {
 
         // Basics
         let test_cluster = match self.context.metadata() {
-            Some(meta) => match meta.test {
-                Some(true) => true,
-                _ => false,
-            },
+            Some(meta) => matches!(meta.test, Some(true)),
             _ => false,
         };
 
@@ -165,7 +162,7 @@ impl<'a> DOKS<'a> {
             .dns_provider
             .resolvers()
             .iter()
-            .map(|x| format!("{}", x.clone().to_string()))
+            .map(|x| x.clone().to_string())
             .collect();
 
         let managed_dns_resolvers_terraform_format = terraform_list_format(managed_dns_resolvers);

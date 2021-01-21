@@ -62,10 +62,7 @@ pub trait Service {
             _ => return false,
         };
 
-        match TcpStream::connect(format!("{}:{}", ip, private_port)) {
-            Ok(_) => true,
-            Err(_) => false,
-        }
+        TcpStream::connect(format!("{}:{}", ip, private_port)).is_ok()
     }
     fn engine_error_scope(&self) -> EngineErrorScope;
     fn engine_error(&self, cause: EngineErrorCause, message: String) -> EngineError {
@@ -147,7 +144,7 @@ pub trait Router: StatelessService + Listen {
             ListenersHelper::new(self.listeners()),
             self.name_with_id(),
             self.domains(),
-            self.id().into(),
+            self.id(),
             self.context().execution_id(),
         )?;
         Ok(())
@@ -160,7 +157,7 @@ pub trait Database: StatefulService {
             ListenersHelper::new(&listeners),
             self.name_with_id(),
             domains,
-            self.id().into(),
+            self.id(),
             self.context().execution_id(),
         )?;
         Ok(())
@@ -926,7 +923,7 @@ where
             }
 
             let debug_logs = service.debug_logs(deployment_target);
-            let debug_logs_string = if debug_logs.len() > 0 {
+            let debug_logs_string = if !debug_logs.is_empty() {
                 debug_logs.join("\n")
             } else {
                 String::from("<no debug logs>")
@@ -947,7 +944,7 @@ where
                 CheckAction::Delete => listeners_helper.delete_error(progress_info),
             }
 
-            return Err(err);
+            Err(err)
         }
         _ => {
             let progress_info = ProgressInfo::new(
@@ -1261,7 +1258,7 @@ where
 }
 
 pub fn get_tfstate_suffix(service: &dyn Service) -> String {
-    format!("{}", service.id())
+    service.id().to_string()
 }
 
 // Name generated from TF secret suffix

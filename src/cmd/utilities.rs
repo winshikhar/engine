@@ -33,12 +33,12 @@ where
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
 
-    if current_dir.is_some() {
-        cmd.current_dir(current_dir.unwrap());
+    if let Some(current_dir) = current_dir {
+        cmd.current_dir(current_dir);
     }
 
-    if envs.is_some() {
-        envs.unwrap().into_iter().for_each(|(k, v)| {
+    if let Some(envs) = envs {
+        envs.into_iter().for_each(|(k, v)| {
             cmd.env(k, v);
         });
     }
@@ -190,7 +190,7 @@ pub fn run_version_command_for(binary_name: &str) -> String {
         binary_name,
         vec!["--version"],
         |r_out| match r_out {
-            Ok(s) => output_from_cmd.push_str(&s.to_owned()),
+            Ok(s) => output_from_cmd.push_str(&s),
             Err(e) => error!("Error while getting stdout from {} {}", binary_name, e),
         },
         |r_err| match r_err {
@@ -206,29 +206,24 @@ pub fn does_binary_exist<S>(binary: S) -> bool
 where
     S: AsRef<OsStr>,
 {
-    match Command::new(binary)
-        .stdout(Stdio::null())
-        .stdin(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn()
-    {
-        Ok(_) => true,
-        _ => false,
-    }
+    matches!(
+        Command::new(binary)
+            .stdout(Stdio::null())
+            .stdin(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn(),
+        Ok(_)
+    )
 }
 
-pub fn command_to_string<P>(binary: P, args: &Vec<&str>) -> String
+pub fn command_to_string<P>(binary: P, args: &[&str]) -> String
 where
     P: AsRef<Path>,
 {
     format!("{} {}", binary.as_ref().to_str().unwrap(), args.join(" "))
 }
 
-pub fn command_with_envs_to_string<P>(
-    binary: P,
-    args: &Vec<&str>,
-    envs: &Vec<(&str, &str)>,
-) -> String
+pub fn command_with_envs_to_string<P>(binary: P, args: &[&str], envs: &[(&str, &str)]) -> String
 where
     P: AsRef<Path>,
 {

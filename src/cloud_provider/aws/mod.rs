@@ -90,14 +90,13 @@ impl CloudProvider for AWS {
 
         match s {
             Ok(_x) => Ok(()),
-            Err(_) => {
-                return Err(
-                    self.engine_error(
-                        EngineErrorCause::User("Your AWS account seems to be no longer valid (bad Credentials). \
-                    Please contact your Organization administrator to fix or change the Credentials."),
-                        format!("failed to login to AWS {}", self.name_with_id()))
-                );
-            }
+            Err(_) => Err(self.engine_error(
+                EngineErrorCause::User(
+                    "Your AWS account seems to be no longer valid (bad Credentials). \
+                    Please contact your Organization administrator to fix or change the Credentials.",
+                ),
+                format!("failed to login to AWS {}", self.name_with_id()),
+            )),
         }
     }
 

@@ -8,11 +8,9 @@ pub fn get_firsts_namespaces_to_delete(namespaces: Vec<&str>) -> Vec<&str> {
 }
 
 fn minus_namespaces<'a>(all: Vec<&'a str>, to_remove_namespaces: Vec<&str>) -> Vec<&'a str> {
-    let reduced = all
-        .into_iter()
+    all.into_iter()
         .filter(|item| !to_remove_namespaces.contains(item))
-        .collect();
-    return reduced;
+        .collect()
 }
 
 // TODO: use label instead
@@ -24,7 +22,7 @@ pub fn get_qovery_managed_namespaces() -> Vec<&'static str> {
     qovery_managed_namespaces.push("qovery");
     qovery_managed_namespaces.push("cert-manager");
     qovery_managed_namespaces.push("prometheus");
-    return qovery_managed_namespaces;
+    qovery_managed_namespaces
 }
 
 // TODO: use label instead
@@ -34,5 +32,5 @@ fn get_never_delete_namespaces() -> Vec<&'static str> {
     kubernetes_never_delete_namespaces.push("kube-node-lease");
     kubernetes_never_delete_namespaces.push("kube-public");
     kubernetes_never_delete_namespaces.push("kube-system");
-    return kubernetes_never_delete_namespaces;
+    kubernetes_never_delete_namespaces
 }
